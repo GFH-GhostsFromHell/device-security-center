@@ -1,0 +1,18 @@
+server:
+  port: ${PORT:8080}
+spring:
+  application:
+    name: device-security-portal
+  datasource:
+    url: "${SPRING_DATASOURCE_URL:jdbc:h2:file:./device-security-center;AUTO_SERVER=TRUE}"
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
