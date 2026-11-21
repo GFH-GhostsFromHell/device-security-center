@@ -1,6 +1,6 @@
 # Device Security Center
 
-Recovered from [GFH-GhostsFromHell/jhipster-javafx-remote-platform](https://github.com/GFH-GhostsFromHell/jhipster-javafx-remote-platform), **without altering the original**.
+Recovered from [GFH-GhostsFromHell/electrical-workbench](https://github.com/GFH-GhostsFromHell/electrical-workbench), **without altering the original**.
 
 This repository contains the JavaFX Windows desktop app, a standalone Spring Boot cloud portal based on the original device-security endpoints, the matching browser UI, unit tests and GitHub Actions workflows.
 
