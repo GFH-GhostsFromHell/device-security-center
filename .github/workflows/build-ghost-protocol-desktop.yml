@@ -182,13 +182,35 @@ jobs:
         run: |
           $reports = Get-ChildItem 'ghost-protocol-desktop/target/surefire-reports' -Filter '*.txt' -ErrorAction SilentlyContinue
           if (-not $reports) { Write-Host '::error::No surefire reports were produced'; exit 0 }
+          $out = New-Object System.Text.StringBuilder
           foreach ($report in $reports) {
-            $content = (Get-Content $report.FullName -Raw) -replace "`r", ''
-            foreach ($line in ($content -split "`n")) {
-              $text = $line.Trim()
-              if ($text.Length -eq 0) { continue }
-              if ($text.Length -gt 400) { $text = $text.Substring(0, 400) }
-              Write-Host "::error::$($report.BaseName): $text"
+            $content = Get-Content $report.FullName -Raw
+            if ($content -notmatch '<<< (FAILURE|ERROR)!') { continue }
+            [void]$out.AppendLine("=== $($report.BaseName) ===")
+            $lines = $content -split "`r?`n"
+            $i = 0
+            while ($i -lt $lines.Count) {
+              $t = $lines[$i].Trim()
+              if ($t -match '^Tests run:') { [void]$out.AppendLine($t) }
+              if ($t -match '<<< (FAILURE|ERROR)!') {
+                for ($j = $i; $j -le [Math]::Min($i + 8, $lines.Count - 1); $j++) {
+                  $u = $lines[$j].Trim()
+                  if ($u) { [void]$out.AppendLine($u) }
+                }
+                $i += 9
+              } else { $i++ }
             }
           }
+          $text = $out.ToString().Trim()
+          if (-not $text) { $text = 'No failing test details were found in the surefire reports' }
+          $escaped = $text -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A'
+          Write-Host "::error::$escaped"
           exit 0
+
+      - name: Upload surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: ghost-protocol-desktop/target/surefire-reports
+          if-no-files-found: ignore
