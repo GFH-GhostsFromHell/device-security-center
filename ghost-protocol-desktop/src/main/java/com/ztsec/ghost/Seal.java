@@ -106,10 +106,8 @@ public final class Seal {
     public static long verify(Path sealed, MasterKey master, long expected)
             throws IOException, GeneralSecurityException {
         try (InputStream in = Files.newInputStream(sealed)) {
-            byte[] head = in.readNBytes(SealedFormat.NAME_OFFSET + 512);
-            SealedFormat format = SealedFormat.parse(head);
+            SealedFormat format = SealedFormat.readHeader(in);
             SecretKey dataKey = master.unwrap(format.wrappedKey(), format.aad());
-            in.skipNBytes((long) format.headerLength() - head.length);
 
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, dataKey, new GCMParameterSpec(TAG_BITS, format.nonce()));
@@ -128,9 +126,7 @@ public final class Seal {
     public static Path unseal(Path sealed, MasterKey master, Path targetDirectory)
             throws IOException, GeneralSecurityException {
         try (InputStream in = Files.newInputStream(sealed)) {
-            byte[] head = in.readNBytes(SealedFormat.NAME_OFFSET + 512);
-            SealedFormat format = SealedFormat.parse(head);
-            in.skipNBytes((long) format.headerLength() - head.length);
+            SealedFormat format = SealedFormat.readHeader(in);
 
             SecretKey dataKey = master.unwrap(format.wrappedKey(), format.aad());
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");

@@ -1,5 +1,7 @@
 package com.ztsec.ghost;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -58,6 +60,22 @@ public final class SealedFormat {
     public static boolean isSealed(byte[] head) {
         if (head.length < MAGIC.length) return false;
         return Arrays.equals(head, 0, MAGIC.length, MAGIC, 0, MAGIC.length);
+    }
+
+    /**
+     * Reads exactly one header from a forward-only stream and leaves the stream
+     * positioned on the first payload byte.
+     */
+    public static SealedFormat readHeader(InputStream in) throws IOException {
+        byte[] fixed = in.readNBytes(NAME_LENGTH_OFFSET + 2);
+        if (fixed.length < NAME_LENGTH_OFFSET + 2) throw new IllegalArgumentException("Truncated.");
+        int length = ((fixed[NAME_LENGTH_OFFSET] & 0xff) << 8) | (fixed[NAME_LENGTH_OFFSET + 1] & 0xff);
+        if (length == 0) throw new IllegalArgumentException("Bad name.");
+        byte[] name = in.readNBytes(length);
+        if (name.length != length) throw new IllegalArgumentException("Truncated.");
+        byte[] head = Arrays.copyOf(fixed, NAME_OFFSET + length);
+        System.arraycopy(name, 0, head, NAME_OFFSET, length);
+        return parse(head);
     }
 
     public static SealedFormat parse(byte[] head) {
