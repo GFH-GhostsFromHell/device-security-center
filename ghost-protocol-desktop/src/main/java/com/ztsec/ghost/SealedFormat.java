@@ -51,7 +51,7 @@ public final class SealedFormat {
 
     public static byte[] aad(String name, byte flags) {
         byte[] raw = name.getBytes(StandardCharsets.UTF_8);
-        return ByteBuffer.allocate(12 + raw.length)
+        return ByteBuffer.allocate(MAGIC.length + 6 + raw.length)
                 .put(MAGIC).put(VERSION).put(flags).putShort((short) 0)
                 .putShort((short) raw.length).put(raw)
                 .array();
