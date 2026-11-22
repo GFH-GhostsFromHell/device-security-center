@@ -49,7 +49,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
         http.securityMatcher("/api/zt01/**")
-                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers("/api/zt01/case"))
                 .headers(headers -> headers
                         .contentTypeOptions(Customizer.withDefaults())
                         .frameOptions(Customizer.withDefaults())
