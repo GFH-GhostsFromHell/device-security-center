@@ -1,10 +1,10 @@
-# 🛡️ Device Security Center
+# 🛡️ GHOST PROTOCOL
 
 **An experimental Windows desktop and companion cloud portal for user-controlled file-copy encryption, independent offline recovery, device-status reporting, and encrypted owner–operator support.**
 
-Device Security Center is a separate JavaFX application with a Spring Boot web portal. It was extracted from [Electrical Workbench](https://github.com/GFH-GhostsFromHell/electrical-workbench) into its **own repository**, retaining its desktop, API, web interface, tests and build workflows.
+GHOST PROTOCOL is a separate JavaFX application with a Spring Boot web portal. It was extracted from [Electrical Workbench](https://github.com/GFH-GhostsFromHell/electrical-workbench) into its **own repository**, retaining its desktop, API, web interface, tests and build workflows.
 
-[**Windows builds**](https://github.com/GFH-GhostsFromHell/device-security-center/actions/workflows/build-device-security-desktop.yml) · [**Portal build**](https://github.com/GFH-GhostsFromHell/device-security-center/actions/workflows/build-device-security-portal.yml) · [**Source code**](https://github.com/GFH-GhostsFromHell/device-security-center) · [**Security and recovery notes**](device-security-desktop/README.md)
+[**Windows builds**](https://github.com/GFH-GhostsFromHell/device-security-center/actions/workflows/build-ghost-protocol-desktop.yml) · [**Portal build**](https://github.com/GFH-GhostsFromHell/device-security-center/actions/workflows/build-device-security-portal.yml) · [**Source code**](https://github.com/GFH-GhostsFromHell/device-security-center) · [**Security and recovery notes**](ghost-protocol-desktop/README.md)
 
 > [!WARNING]
 > **Prototype, not production-ready security software.** This project's cryptography, authentication, recovery workflows and deployment controls have **not been independently audited**. Test with disposable sample files only. The app **preserves the original unencrypted file**; creating an encrypted copy does *not* secure the original. Do not rely on this app as your only backup or for important personal or business data.
@@ -15,19 +15,19 @@ These screenshots are generated from the **actual HTML and styles checked into t
 
 | Device overview and status reporting | Encrypted recovery-key backup and review |
 |:--:|:--:|
-| ![Device Security Center web interface showing owner device status](docs/screenshots/web-device-status.png) | ![Device Security Center encrypted recovery backup UI](docs/screenshots/web-recovery-requests.png) |
+| ![GHOST PROTOCOL web interface showing owner device status](docs/screenshots/web-device-status.png) | ![GHOST PROTOCOL encrypted recovery backup UI](docs/screenshots/web-recovery-requests.png) |
 
-![Device Security Center password-encrypted support chat interface](docs/screenshots/web-encrypted-chat.png)
+![GHOST PROTOCOL password-encrypted support chat interface](docs/screenshots/web-encrypted-chat.png)
 
 *Windows JavaFX desktop screenshots have not yet been captured; the images above are web UI screenshots only.*
 
-## What Device Security Center does
+## What GHOST PROTOCOL does
 
 | Capability | How it works |
 | --- | --- |
 | **Windows device status** | Runs a **read-only** local BitLocker status check; no encryption settings or drive keys are modified. |
 | **Voluntary cloud reporting** | With consent, submits a device alias, operating system, volume, encryption status and report time to the owner's account. |
-| **Selected-file protection** | The owner manually selects **one file** and creates a separately encrypted `.gfhenc` copy using **AES-256-GCM**. The original file remains untouched. |
+| **Selected-file protection** | The owner manually selects **one file** and creates a separately encrypted `.zts` copy using **AES-256-GCM**. The original file remains untouched. |
 | **Offline recovery** | Generates a fresh recovery code for the file copy. The owner must save and confirm it independently. A matching code is needed to restore the protected copy. |
 | **Optional cloud recovery backup** | A separately chosen passphrase wraps the recovery code *locally* using PBKDF2-HMAC-SHA256 and AES-256-GCM. The portal stores ciphertext, not plaintext keys or passphrases. |
 | **Operator-approved release** | An authenticated owner requests retrieval of their own encrypted backup. An operator can approve or deny it. Approval permits **one ciphertext retrieval within 15 minutes**; the owner unwraps it locally. |
@@ -44,11 +44,11 @@ The Windows app has four tabs: **Device status**, **Encrypt file**, **Cloud reco
 
 | Component | Stack | Availability |
 | --- | --- | --- |
-| **Windows desktop** | Java 21 + JavaFX | [Download the MSI or portable ZIP from a successful GitHub Actions run](https://github.com/GFH-GhostsFromHell/device-security-center/actions/workflows/build-device-security-desktop.yml). Builds include a bundled Java runtime and are **unsigned**. |
-| **Web portal** | HTML/CSS/JavaScript + Spring Boot | Standalone source lives in [`portal/`](portal/). Run locally as described below. **No separate public Device Security Center deployment is established by this repository.** |
+| **Windows desktop** | Java 21 + JavaFX | [Download the MSI or portable ZIP from a successful GitHub Actions run](https://github.com/GFH-GhostsFromHell/device-security-center/actions/workflows/build-ghost-protocol-desktop.yml). Builds include a bundled Java runtime and are **unsigned**. |
+| **Web portal** | HTML/CSS/JavaScript + Spring Boot | Standalone source lives in [`portal/`](portal/). Run locally as described below. **No separate public GHOST PROTOCOL deployment is established by this repository.** |
 | **Backend and persistence** | Spring Security, JDBC/JPA, local H2 or PostgreSQL | Separate owner/operator accounts from environment variables; local developer persistence is file-backed H2. |
 
-**The default desktop cloud address currently points to the legacy hosted Electrical Workbench portal.** To connect to a standalone Device Security Center server, explicitly set `PORTAL_URL`. A successfully built portal is not proof of a publicly deployed or audited service.
+**The default desktop cloud address currently points to the legacy hosted Electrical Workbench portal.** To connect to a standalone GHOST PROTOCOL server, explicitly set `PORTAL_URL`. A successfully built portal is not proof of a publicly deployed or audited service.
 
 ## How file-copy recovery works
 
@@ -87,7 +87,7 @@ The Windows app has four tabs: **Device status**, **Encrypt file**, **Cloud reco
 git clone https://github.com/GFH-GhostsFromHell/device-security-center.git
 cd device-security-center
 
-mvn -B -f device-security-desktop/pom.xml test
+mvn -B -f ghost-protocol-desktop/pom.xml test
 mvn -B -f portal/pom.xml test
 ```
 
@@ -96,8 +96,8 @@ mvn -B -f portal/pom.xml test
 Set **four different account values**, with separate strong owner/operator passwords of at least 12 characters. Do not reuse production passwords or commit credentials.
 
 ```powershell
-$env:DEVICE_ADMIN_USERNAME = "operator"
-$env:DEVICE_ADMIN_PASSWORD = "<unique password, at least 12 characters>"
+$env:ZT_OPERATOR_USERNAME = "operator"
+$env:ZT_OPERATOR_PASSWORD = "<unique password, at least 12 characters>"
 $env:DEVICE_OWNER_USERNAME = "owner"
 $env:DEVICE_OWNER_PASSWORD = "<different password, at least 12 characters>"
 mvn -B -f portal/pom.xml spring-boot:run
@@ -111,7 +111,7 @@ In a **second PowerShell terminal**, run:
 
 ```powershell
 $env:PORTAL_URL = "http://localhost:8080"
-mvn -B -f device-security-desktop/pom.xml javafx:run
+mvn -B -f ghost-protocol-desktop/pom.xml javafx:run
 ```
 
 If `PORTAL_URL` is unset, the desktop uses the original cloud portal's URL, **not** your local instance. Only localhost HTTP is accepted; use HTTPS for remote connections.
@@ -120,7 +120,7 @@ If `PORTAL_URL` is unset, the desktop uses the original cloud portal's URL, **no
 
 1. Choose a **disposable test file** under **Encrypt file**.
 2. Save the displayed offline recovery code independently, then re-enter it to confirm it was recorded.
-3. Create the `.gfhenc` copy and verify you can restore it with the offline code.
+3. Create the `.zts` copy and verify you can restore it with the offline code.
 4. If desired, test an optional encrypted cloud backup using a **different escrow passphrase** and your own local portal.
 5. Use the owner account to request a release; use the operator account to review it.
 6. For chat, share a separate strong passphrase by an independent trusted channel, then use **Support chat**.
@@ -131,8 +131,8 @@ Do not put recovery codes or chat passphrases in support messages, GitHub issues
 
 | Workflow | Purpose |
 | --- | --- |
-| [Build Device Security Center (Windows)](.github/workflows/build-device-security-desktop.yml) | Runs Java tests, packages a bundled-runtime Windows application, produces `DeviceSecurityCenter-Windows-Installer.msi` and `DeviceSecurityCenter-Windows-Portable.zip`, and uploads build artifacts. |
-| [Build Device Security Center Portal](.github/workflows/build-device-security-portal.yml) | Runs Maven verification for the standalone Spring Boot portal. |
+| [Build GHOST PROTOCOL (Windows)](.github/workflows/build-ghost-protocol-desktop.yml) | Runs Java tests, packages a bundled-runtime Windows application, produces `DeviceSecurityCenter-Windows-Installer.msi` and `DeviceSecurityCenter-Windows-Portable.zip`, and uploads build artifacts. |
+| [Build GHOST PROTOCOL Portal](.github/workflows/build-device-security-portal.yml) | Runs Maven verification for the standalone Spring Boot portal. |
 | [Validate Device Security Web UI](.github/workflows/validate-device-security-web.yml) | Checks browser JavaScript syntax and presence of important portal UI controls. |
 | [Capture README Screenshots](.github/workflows/capture-readme-screenshots.yml) | Captures the checked-in web interface using an isolated, empty local preview. |
 
@@ -141,14 +141,14 @@ To download an installer, open a **successful** Windows workflow run, scroll to 
 ## Repository structure
 
 ```text
-device-security-desktop/
+ghost-protocol-desktop/
   src/main/java/com/gfh/devicesecurity/   JavaFX UI, file-copy crypto, recovery and chat
   src/test/                                Desktop crypto and device-status tests
   pom.xml                                  JavaFX Maven build
 portal/
   src/main/java/com/example/remoteportal/ Standalone Spring Boot entry point
   src/main/java/.../device/               Device, escrow and support endpoints
-  src/main/resources/static/              Device Security Center browser UI
+  src/main/resources/static/              GHOST PROTOCOL browser UI
   src/test/                                Cloud endpoint tests
   pom.xml                                  Spring Boot Maven build
 docs/screenshots/                          Source-code web screenshots (generated by CI)
@@ -166,10 +166,10 @@ scripts/                                   Screenshot generation helper
 - Cloud storage should be protected by TLS, hardened account management, appropriate CSRF and rate-limit controls, backups, logging review and a professional security assessment **before public production use**.
 - The code is intentionally **not ransomware** and does not implement unattended mass encryption, full-system locking, remote enforcement, deletion or tampering with original files.
 
-For deeper protocol notes, consult the [desktop README](device-security-desktop/README.md) and [standalone cloud notes](portal/README.md).
+For deeper protocol notes, consult the [desktop README](ghost-protocol-desktop/README.md) and [standalone cloud notes](portal/README.md).
 
 ## Project background, license and contributions
 
-This repository was extracted from the [Electrical Workbench](https://github.com/GFH-GhostsFromHell/electrical-workbench) codebase to separate Device Security Center development from electrical field tools. The original repository was not overwritten by the extraction.
+This repository was extracted from the [Electrical Workbench](https://github.com/GFH-GhostsFromHell/electrical-workbench) codebase to separate GHOST PROTOCOL development from electrical field tools. The original repository was not overwritten by the extraction.
 
 This codebase is **publicly visible**, but no open-source license is currently included. Public visibility alone does not grant rights to reuse or redistribute it. Contributions and bug reports can be discussed in [GitHub Issues](https://github.com/GFH-GhostsFromHell/device-security-center/issues) without posting real data, secrets or recovery material.
