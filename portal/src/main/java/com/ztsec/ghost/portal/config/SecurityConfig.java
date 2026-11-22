@@ -3,8 +3,6 @@ package com.ztsec.ghost.portal.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -14,9 +12,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-/** API chain uses basic auth with a readable CSRF cookie; pages chain uses form login. */
+/**
+ * Single chain. The API answers with basic auth and a 401 entry point; pages use form login.
+ * Scoping by entry point means nothing depends on filter-chain bean ordering.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -49,35 +52,29 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(1)
-    @Order(1)
-    SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
-        http.securityMatcher("/api/zt01/**")
-                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+    SecurityFilterChain security(HttpSecurity http) throws Exception {
+        BasicAuthenticationEntryPoint apiEntry = new BasicAuthenticationEntryPoint();
+        apiEntry.setRealmName("zt01");
+
+        http.csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers("/api/zt01/case"))
                 .headers(headers -> headers
                         .contentTypeOptions(Customizer.withDefaults())
                         .frameOptions(Customizer.withDefaults())
                         .httpStrictTransportSecurity(Customizer.withDefaults()))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults());
-        return http.build();
-    }
-
-    @Bean
-    @Order(2)
-    @Order(2)
-    SecurityFilterChain pageChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/zt01/**").authenticated()
                         .requestMatchers("/", "/ghost.html", "/takeover.html", "/zt01.css",
                                 "/takeover.js", "/comms.js", "/vault.js", "/login",
                                 "/actuator/health").permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(handling -> handling
+                        .defaultAuthenticationEntryPointFor(apiEntry,
+                                new AntPathRequestMatcher("/api/zt01/**")))
+                .httpBasic(Customizer.withDefaults())
                 .formLogin(Customizer.withDefaults())
-                .logout(Customizer.withDefaults())
-                .headers(headers -> headers
-                        .contentTypeOptions(Customizer.withDefaults())
-                        .frameOptions(Customizer.withDefaults()));
+                .logout(Customizer.withDefaults());
         return http.build();
     }
 }
