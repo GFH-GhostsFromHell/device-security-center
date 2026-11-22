@@ -175,3 +175,20 @@ jobs:
           path: ghost-protocol-desktop/target/DeviceSecurityCenter-Windows-Portable.zip
           if-no-files-found: error
           retention-days: 30
+
+      - name: Surface test failures as annotations
+        if: failure()
+        shell: pwsh
+        run: |
+          $reports = Get-ChildItem 'ghost-protocol-desktop/target/surefire-reports' -Filter '*.txt' -ErrorAction SilentlyContinue
+          if (-not $reports) { Write-Host '::error::No surefire reports were produced'; exit 0 }
+          foreach ($report in $reports) {
+            $content = (Get-Content $report.FullName -Raw) -replace "`r", ''
+            foreach ($line in ($content -split "`n")) {
+              $text = $line.Trim()
+              if ($text.Length -eq 0) { continue }
+              if ($text.Length -gt 400) { $text = $text.Substring(0, 400) }
+              Write-Host "::error::$($report.BaseName): $text"
+            }
+          }
+          exit 0
