@@ -65,9 +65,11 @@ public final class TakeoverView extends VBox {
         hair.setStyle("-fx-background-color: " + Theme.ACCENT_HEX + ";");
         Region spacer = new Region();
         spacer.setPrefHeight(18);
+        Region spacer2 = new Region();
+        spacer2.setPrefHeight(18);
 
         getChildren().addAll(eyebrow, headline, hair, clockText, caseText, spacer,
-                amountText, addressText, copy, progressText, spacer, restore, exit);
+                amountText, addressText, copy, progressText, spacer2, restore, exit);
     }
 
     public void arm(String caseId, String amount, String address, ArmTimer timer) {
