@@ -7,6 +7,6 @@ package com.ztsec.ghost;
 public final class Launcher {
     private Launcher() { }
     public static void main(String[] args) {
-        GhostProtocolDesktop.main(args);
+        javafx.application.Application.launch(GhostProtocolDesktop.class, args);
     }
 }
