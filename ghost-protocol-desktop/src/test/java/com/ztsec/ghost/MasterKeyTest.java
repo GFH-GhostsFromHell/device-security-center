@@ -24,7 +24,7 @@ class MasterKeyTest {
     }
 
     @Test
-    void wrongCodeIsRejected() {
+    void wrongCodeIsRejected() throws Exception {
         String code = MasterKey.generate().recoveryCode();
         String broken = (code.charAt(0) == 'A' ? "B" : "A") + code.substring(1);
         assertThrows(IllegalArgumentException.class, () -> MasterKey.fromRecoveryCode(broken));
