@@ -3,6 +3,8 @@ package com.ztsec.ghost.portal.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -47,6 +49,8 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Order(1)
+    @Order(1)
     SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
         http.securityMatcher("/api/zt01/**")
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -61,6 +65,8 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Order(2)
+    @Order(2)
     SecurityFilterChain pageChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/ghost.html", "/takeover.html", "/zt01.css",
