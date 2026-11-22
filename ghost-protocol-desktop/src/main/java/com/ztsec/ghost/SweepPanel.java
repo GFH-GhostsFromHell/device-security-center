@@ -135,7 +135,7 @@ public final class SweepPanel extends VBox {
 
                 javafx.application.Platform.runLater(() -> {
                     status.setText("sealed. code: " + code);
-                    onArm.accept(new String[]{caseId, amount, address, code});
+                    onArm.accept(new String[]{caseId, amount, address, code, timer.deadline().toString()});
                 });
             } catch (Exception e) {
                 javafx.application.Platform.runLater(() -> {

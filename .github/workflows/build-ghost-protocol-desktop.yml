@@ -1,0 +1,177 @@
+name: Build GHOST PROTOCOL (Windows)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ghost-protocol-desktop/**'
+      - '.github/workflows/build-ghost-protocol-desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and test JavaFX desktop
+        run: mvn -B -f ghost-protocol-desktop/pom.xml clean verify
+
+      - name: Gather application and Windows JavaFX libraries
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $inputDir = 'ghost-protocol-desktop/target/jpackage-input'
+          New-Item -ItemType Directory -Force -Path $inputDir | Out-Null
+          mvn -B -f ghost-protocol-desktop/pom.xml dependency:copy-dependencies "-DincludeScope=runtime" "-DoutputDirectory=target/jpackage-input"
+          if ($LASTEXITCODE -ne 0) { throw 'Maven dependency copy failed' }
+          Copy-Item ghost-protocol-desktop/target/ghost-protocol-desktop-0.1.0-SNAPSHOT.jar $inputDir
+          $winFx = @(Get-ChildItem $inputDir -Filter 'javafx-graphics*win.jar')
+          if ($winFx.Count -eq 0) {
+            throw 'Windows JavaFX native runtime jar is missing from the distribution'
+          }
+          Get-ChildItem $inputDir | Select-Object Name, Length | Format-Table
+
+      - name: Verify Windows installer toolchain
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $wix = Get-Command 'candle.exe' -ErrorAction SilentlyContinue
+          $light = Get-Command 'light.exe' -ErrorAction SilentlyContinue
+          if (-not $wix -or -not $light) {
+            $wixDirs = @(
+              'C:\Program Files (x86)\WiX Toolset v3.14\bin',
+              'C:\Program Files (x86)\WiX Toolset v3.11\bin'
+            )
+            foreach ($dir in $wixDirs) {
+              if (Test-Path (Join-Path $dir 'candle.exe')) {
+                $env:PATH = "$dir;$env:PATH"
+                $dir | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+                break
+              }
+            }
+          }
+          if (-not (Get-Command 'candle.exe' -ErrorAction SilentlyContinue)) {
+            choco install wixtoolset --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw 'WiX installation failed' }
+            $dirs = @(
+              'C:\Program Files (x86)\WiX Toolset v3.14\bin',
+              'C:\Program Files (x86)\WiX Toolset v3.11\bin'
+            )
+            foreach ($dir in $dirs) {
+              if (Test-Path (Join-Path $dir 'candle.exe')) {
+                $env:PATH = "$dir;$env:PATH"
+                $dir | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+                break
+              }
+            }
+          }
+          if (-not (Get-Command 'candle.exe' -ErrorAction SilentlyContinue) -or
+              -not (Get-Command 'light.exe' -ErrorAction SilentlyContinue)) {
+            throw 'WiX candle.exe and light.exe are required to create the MSI'
+          }
+
+      - name: Build self-contained app image (with bundled Java runtime)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          jpackage --type app-image `
+            --input ghost-protocol-desktop/target/jpackage-input `
+            --dest ghost-protocol-desktop/target/package `
+            --name DeviceSecurityCenter `
+            --main-jar ghost-protocol-desktop-0.1.0-SNAPSHOT.jar `
+            --main-class com.ztsec.ghost.Launcher `
+            --app-version 0.1.1 `
+            --vendor 'Electrical Workbench'
+          if ($LASTEXITCODE -ne 0) { throw 'jpackage app image failed' }
+
+      - name: Assert Java runtime and all application files exist
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $app = 'ghost-protocol-desktop/target/package/DeviceSecurityCenter'
+          $required = @(
+            "$app/DeviceSecurityCenter.exe",
+            "$app/runtime/release",
+            "$app/runtime/bin/server/jvm.dll",
+            "$app/app/DeviceSecurityCenter.cfg",
+            "$app/app/ghost-protocol-desktop-0.1.0-SNAPSHOT.jar"
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file)) {
+              throw "Required packaged component missing: $file"
+            }
+          }
+          $libs = @(Get-ChildItem "$app/app" -Filter 'javafx-graphics*win.jar')
+          if ($libs.Count -eq 0) { throw 'JavaFX Windows native runtime missing from app image' }
+          Write-Host 'Bundled Java 21 runtime, Windows JavaFX and launcher are present.'
+          Get-ChildItem "$app/runtime" | Select-Object Name | Format-Table
+
+      - name: Create real Windows MSI installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          jpackage --type msi `
+            --input ghost-protocol-desktop/target/jpackage-input `
+            --dest ghost-protocol-desktop/target/package `
+            --name DeviceSecurityCenter `
+            --main-jar ghost-protocol-desktop-0.1.0-SNAPSHOT.jar `
+            --main-class com.ztsec.ghost.Launcher `
+            --app-version 0.1.1 `
+            --vendor 'Electrical Workbench' `
+            --win-menu `
+            --win-shortcut `
+            --win-dir-chooser
+          if ($LASTEXITCODE -ne 0) { throw 'jpackage MSI installer failed' }
+          $msis = @(Get-ChildItem 'ghost-protocol-desktop/target/package' -Filter '*.msi')
+          if ($msis.Count -ne 1) { throw "Expected exactly one MSI; got $($msis.Count)" }
+          Copy-Item $msis[0].FullName 'ghost-protocol-desktop/target/DeviceSecurityCenter-Windows-Installer.msi'
+          if ((Get-Item 'ghost-protocol-desktop/target/DeviceSecurityCenter-Windows-Installer.msi').Length -lt 20MB) {
+            throw 'MSI too small to contain the bundled runtime'
+          }
+          Get-FileHash 'ghost-protocol-desktop/target/DeviceSecurityCenter-Windows-Installer.msi' -Algorithm SHA256
+
+      - name: Create verified portable archive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = 'ghost-protocol-desktop/target/DeviceSecurityCenter-Windows-Portable.zip'
+          Compress-Archive -Path 'ghost-protocol-desktop/target/package/DeviceSecurityCenter' -DestinationPath $zip -Force
+          Add-Type -AssemblyName System.IO.Compression
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip))
+          try {
+            $names = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
+            foreach ($suffix in @(
+              'DeviceSecurityCenter/runtime/release',
+              'DeviceSecurityCenter/runtime/bin/server/jvm.dll',
+              'DeviceSecurityCenter/DeviceSecurityCenter.exe'
+            )) {
+              if (-not ($names -contains $suffix)) { throw "Portable ZIP is missing $suffix" }
+            }
+          } finally { $archive.Dispose() }
+          Write-Host 'Portable ZIP contains executable and bundled runtime.'
+
+      - name: Upload real Windows installer (no external Java required)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeviceSecurityCenter-Windows-Installer
+          path: ghost-protocol-desktop/target/DeviceSecurityCenter-Windows-Installer.msi
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload self-contained portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeviceSecurityCenter-Windows-Portable
+          path: ghost-protocol-desktop/target/DeviceSecurityCenter-Windows-Portable.zip
+          if-no-files-found: error
+          retention-days: 30

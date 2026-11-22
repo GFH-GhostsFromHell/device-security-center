@@ -1,4 +1,4 @@
-name: Capture Device Security Center README Screenshots
+name: Capture GHOST PROTOCOL README Screenshots
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Screenshots already up to date."
           else
-            git commit -m "docs: capture real Device Security Center web UI"
+            git commit -m "docs: capture real GHOST PROTOCOL web UI"
             git pull --rebase origin main
             git push origin HEAD:main
           fi

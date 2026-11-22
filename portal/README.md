@@ -1,6 +1,6 @@
 # Standalone cloud API
 
-This directory extracts the original Device Security Center controller, persistence schema,
+This directory extracts the original GHOST PROTOCOL controller, persistence schema,
 browser UI and unit tests into its own Spring Boot 3.5 / Java 21 service.
 
 This is intentionally **not** a copy of the full Electrical Workbench cloud portal.

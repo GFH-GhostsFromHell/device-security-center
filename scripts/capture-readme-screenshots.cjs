@@ -26,9 +26,9 @@ const base = 'http://127.0.0.1:8765/device-security.html';
     });
 
     // Read-only, unauthenticated preview. Avoid backend requests and private data.
-    await page.route('**/api/device-security/devices', route =>
+    await page.route('**/api/zt01/devices', route =>
       route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
-    await page.route('**/api/device-security/**', route =>
+    await page.route('**/api/zt01/**', route =>
       route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }));
     // The actual UI layout is fully in HTML; prevent account API requests.
     await page.route('**/device-security-chat.js*', route => route.abort());
